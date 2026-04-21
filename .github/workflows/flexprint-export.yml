@@ -1,0 +1,82 @@
+name: FlexPrint Export
+
+on:
+  workflow_dispatch:
+    inputs:
+      view:
+        description: "Order view filter"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - pending
+          - inprocess
+          - completed
+          - unapproved
+      max_orders:
+        description: "Max orders to export (0 = all)"
+        required: false
+        default: "0"
+        type: string
+  schedule:
+    - cron: "15 04 * * 1-5"
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    name: Export FlexPrint data
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      FLEXPRINT_USER: ${{ secrets.FLEXPRINT_USER }}
+      FLEXPRINT_PASS: ${{ secrets.FLEXPRINT_PASS }}
+      FLEXPRINT_VIEW: ${{ github.event.inputs.view }}
+      FLEXPRINT_MAX_ORDERS: ${{ github.event.inputs.max_orders }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install openpyxl
+
+      - name: Validate required secrets
+        run: |
+          if [ -z "${FLEXPRINT_USER}" ] || [ -z "${FLEXPRINT_PASS}" ]; then
+            echo "Missing FLEXPRINT_USER or FLEXPRINT_PASS repository secret."
+            exit 1
+          fi
+
+      - name: Run export
+        run: |
+          VIEW="${FLEXPRINT_VIEW:-all}"
+          MAX_ORDERS="${FLEXPRINT_MAX_ORDERS:-0}"
+          python flexprint_order_export.py \
+            --view "${VIEW}" \
+            --max-orders "${MAX_ORDERS}" \
+            --detail-timeout 120 \
+            --detail-retries 4 \
+            --detail-sleep 0.25 \
+            --output flexprint_orders_full_retry.csv \
+            --items-output flexprint_order_items_full_retry.csv \
+            --xlsx-output flexprint_export_full.xlsx
+
+      - name: Upload export files
+        uses: actions/upload-artifact@v4
+        with:
+          name: flexprint-export-${{ github.run_number }}
+          retention-days: 30
+          if-no-files-found: error
+          path: |
+            flexprint_export_full.xlsx
+            flexprint_orders_full_retry.csv
+            flexprint_order_items_full_retry.csv

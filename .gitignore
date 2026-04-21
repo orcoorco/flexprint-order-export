@@ -1,0 +1,5 @@
+# Generated export files
+flexprint_export_*.xlsx
+flexprint_orders_*.csv
+flexprint_order_items_*.csv
+
