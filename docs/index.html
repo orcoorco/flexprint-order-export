@@ -6,16 +6,13 @@
   <title>FlexPrint Export</title>
   <style>
     :root {
-      --bg: #f4f6f8;
-      --panel: #ffffff;
-      --ink: #17212b;
-      --muted: #4f5d6b;
-      --primary: #005f73;
-      --primary-2: #0a9396;
-      --border: #d6dde4;
-      --ok: #1f8f51;
-      --warn: #b26a00;
-      --err: #b00020;
+      --bg: #eef4f7;
+      --card: #ffffff;
+      --ink: #14202b;
+      --muted: #4c5e70;
+      --brand: #0b7285;
+      --brand2: #1696a5;
+      --line: #d4dfe8;
     }
 
     * { box-sizing: border-box; }
@@ -25,8 +22,8 @@
       font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at 10% 10%, #dce8ef 0%, transparent 35%),
-        radial-gradient(circle at 90% 15%, #d6f0ef 0%, transparent 35%),
+        radial-gradient(circle at 5% 15%, #d8e7ee 0%, transparent 34%),
+        radial-gradient(circle at 96% 20%, #d4efef 0%, transparent 40%),
         var(--bg);
     }
 
@@ -34,19 +31,19 @@
       width: min(920px, 92vw);
       margin: 36px auto;
       display: grid;
-      gap: 16px;
+      gap: 14px;
     }
 
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
       border-radius: 14px;
       padding: 18px;
-      box-shadow: 0 6px 16px rgba(23, 33, 43, 0.06);
+      box-shadow: 0 8px 20px rgba(20, 32, 43, 0.06);
     }
 
     h1 {
-      margin: 0 0 10px 0;
+      margin: 0 0 8px;
       font-size: 1.6rem;
       letter-spacing: 0.2px;
     }
@@ -57,399 +54,126 @@
       line-height: 1.45;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 12px;
-      margin-top: 14px;
-    }
-
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-      font-size: 0.94rem;
-    }
-
-    input, select {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px 11px;
-      font-size: 0.96rem;
-      color: var(--ink);
-      background: #fff;
-    }
-
-    input:focus, select:focus {
-      outline: 2px solid rgba(10, 147, 150, 0.35);
-      border-color: var(--primary-2);
-    }
-
-    .note {
-      font-size: 0.86rem;
-      color: var(--muted);
-      margin-top: 7px;
-    }
-
     .actions {
-      margin-top: 15px;
+      margin-top: 14px;
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      align-items: center;
     }
 
-    button, .link-btn {
-      border: 0;
+    .btn {
       border-radius: 10px;
-      padding: 10px 14px;
+      border: 1px solid var(--line);
+      text-decoration: none;
       font-weight: 700;
       letter-spacing: 0.2px;
-      cursor: pointer;
-      text-decoration: none;
+      padding: 10px 14px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
       font-size: 0.93rem;
     }
 
     .btn-primary {
+      border: 0;
       color: #fff;
-      background: linear-gradient(120deg, var(--primary), var(--primary-2));
+      background: linear-gradient(120deg, var(--brand), var(--brand2));
     }
 
     .btn-secondary {
       color: var(--ink);
-      background: #ecf1f4;
-      border: 1px solid var(--border);
-    }
-
-    .btn-disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
+      background: #f4f8fb;
     }
 
     .meta {
       margin-top: 12px;
+      font-size: 0.92rem;
       color: var(--muted);
-      font-size: 0.9rem;
+      line-height: 1.5;
     }
 
-    pre {
-      margin: 10px 0 0;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #0f1721;
-      color: #d8e1eb;
-      min-height: 130px;
-      padding: 12px;
-      white-space: pre-wrap;
-      line-height: 1.45;
-      font-size: 0.84rem;
+    .mono {
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #f4f8fb;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 1px 6px;
     }
 
-    .status-ok { color: var(--ok); }
-    .status-warn { color: var(--warn); }
-    .status-err { color: var(--err); }
+    #status {
+      margin-top: 8px;
+      color: var(--muted);
+      line-height: 1.55;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.86rem;
+    }
   </style>
 </head>
 <body>
   <main>
-    <section class="panel">
+    <section class="card">
       <h1>FlexPrint Export</h1>
-      <p>
-        Starta export-jobbet i GitHub Actions och ladda ner resultatet direkt som artifact-zip.
-      </p>
-      <div class="grid">
-        <div>
-          <label for="token">GitHub PAT</label>
-          <input id="token" type="password" placeholder="ghp_... / github_pat_...">
-          <div class="note">Token behöver scope för <code>repo</code> och <code>workflow</code>.</div>
-        </div>
-        <div>
-          <label for="view">Orderfilter</label>
-          <select id="view">
-            <option value="all">all</option>
-            <option value="pending">pending</option>
-            <option value="inprocess">inprocess</option>
-            <option value="completed">completed</option>
-            <option value="unapproved">unapproved</option>
-          </select>
-        </div>
-        <div>
-          <label for="maxOrders">Max orders</label>
-          <input id="maxOrders" type="number" min="0" step="1" value="0">
-          <div class="note">0 = alla.</div>
-        </div>
-      </div>
+      <p>Ingen PAT behövs. Ladda ner senaste publicerade XLS direkt.</p>
       <div class="actions">
-        <button id="startBtn" class="btn-primary">Generera ny export</button>
-        <button id="latestBtn" class="btn-secondary">Ladda ner senaste lyckade</button>
-        <a class="link-btn btn-secondary" target="_blank" rel="noopener noreferrer"
+        <a class="btn btn-primary" href="./latest/flexprint_export_full.xls" download>
+          Ladda ner senaste XLS
+        </a>
+        <a class="btn btn-secondary" target="_blank" rel="noopener noreferrer"
            href="https://github.com/orcoorco/flexprint-order-export/actions/workflows/flexprint-export.yml">
-          Öppna Actions
+          Generera ny export (GitHub Actions)
         </a>
       </div>
       <div class="meta">
-        Repo: <code>orcoorco/flexprint-order-export</code>, branch: <code>main</code>
+        Fil: <span class="mono">docs/latest/flexprint_export_full.xls</span><br>
+        Repo: <span class="mono">orcoorco/flexprint-order-export</span>
       </div>
     </section>
 
-    <section class="panel">
-      <strong>Status</strong>
-      <pre id="log"></pre>
-      <div class="actions">
-        <a id="runLink" class="link-btn btn-secondary btn-disabled" target="_blank" rel="noopener noreferrer">Öppna senaste körning</a>
-        <button id="downloadBtn" class="btn-primary btn-disabled" disabled>Ladda ner artifact</button>
-      </div>
+    <section class="card">
+      <strong>Publiceringsstatus</strong>
+      <div id="status">Läser status...</div>
     </section>
   </main>
 
   <script>
-    const owner = "orcoorco";
-    const repo = "flexprint-order-export";
-    const workflowFile = "flexprint-export.yml";
-    const ref = "main";
-    const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
-
-    const tokenEl = document.getElementById("token");
-    const viewEl = document.getElementById("view");
-    const maxOrdersEl = document.getElementById("maxOrders");
-    const logEl = document.getElementById("log");
-    const startBtn = document.getElementById("startBtn");
-    const latestBtn = document.getElementById("latestBtn");
-    const runLink = document.getElementById("runLink");
-    const downloadBtn = document.getElementById("downloadBtn");
-
-    let currentArtifact = null;
-
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-    function appendLog(msg, level = "") {
-      const time = new Date().toLocaleTimeString("sv-SE");
-      const prefix = level ? `[${level}]` : "";
-      logEl.textContent += `${time} ${prefix} ${msg}\n`;
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    function setRunLink(url) {
-      if (!url) {
-        runLink.classList.add("btn-disabled");
-        runLink.removeAttribute("href");
-        return;
-      }
-      runLink.href = url;
-      runLink.classList.remove("btn-disabled");
-    }
-
-    function setDownloadEnabled(enabled) {
-      downloadBtn.disabled = !enabled;
-      downloadBtn.classList.toggle("btn-disabled", !enabled);
-    }
-
-    function disableMainButtons(disabled) {
-      startBtn.disabled = disabled;
-      latestBtn.disabled = disabled;
-      startBtn.classList.toggle("btn-disabled", disabled);
-      latestBtn.classList.toggle("btn-disabled", disabled);
-    }
-
-    function requireToken() {
-      const token = tokenEl.value.trim();
-      if (!token) throw new Error("Fyll i GitHub PAT först.");
-      return token;
-    }
-
-    async function ghFetch(path, token, options = {}) {
-      const response = await fetch(path, {
-        ...options,
-        headers: {
-          "Accept": "application/vnd.github+json",
-          "Authorization": `Bearer ${token}`,
-          "X-GitHub-Api-Version": "2022-11-28",
-          ...(options.headers || {})
-        }
-      });
-
-      const isJson = (response.headers.get("content-type") || "").includes("application/json");
-      const body = isJson ? await response.json() : await response.text();
-
-      if (!response.ok) {
-        const message = isJson && body && body.message ? body.message : String(body || response.statusText);
-        throw new Error(`GitHub API ${response.status}: ${message}`);
-      }
-
-      return body;
-    }
-
-    async function dispatchWorkflow(token, view, maxOrders) {
-      appendLog("Skickar workflow_dispatch...");
-      await ghFetch(`${apiBase}/actions/workflows/${workflowFile}/dispatches`, token, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ref,
-          inputs: {
-            view,
-            max_orders: String(maxOrders)
-          }
-        })
-      });
-      appendLog("Workflow dispatch skickat.");
-    }
-
-    async function findRunAfter(token, afterMs) {
-      const data = await ghFetch(
-        `${apiBase}/actions/workflows/${workflowFile}/runs?branch=${encodeURIComponent(ref)}&event=workflow_dispatch&per_page=20`,
-        token
-      );
-
-      const runs = (data.workflow_runs || []).filter((run) => {
-        const created = new Date(run.created_at).getTime();
-        return created >= afterMs;
-      });
-
-      return runs[0] || null;
-    }
-
-    async function waitForRun(token, runId) {
-      appendLog(`Väntar på körning #${runId}...`);
-      while (true) {
-        const run = await ghFetch(`${apiBase}/actions/runs/${runId}`, token);
-        appendLog(`Run status: ${run.status}, conclusion: ${run.conclusion || "-"}`);
-        setRunLink(run.html_url);
-
-        if (run.status === "completed") return run;
-        await sleep(5000);
-      }
-    }
-
-    async function getArtifacts(token, runId) {
-      const data = await ghFetch(`${apiBase}/actions/runs/${runId}/artifacts?per_page=100`, token);
-      return (data.artifacts || []).filter((artifact) => !artifact.expired);
-    }
-
-    async function waitForArtifact(token, runId) {
-      for (let attempt = 1; attempt <= 12; attempt++) {
-        const artifacts = await getArtifacts(token, runId);
-        if (artifacts.length > 0) return artifacts[0];
-        appendLog(`Artifact saknas ännu, försök ${attempt}/12...`);
-        await sleep(3000);
-      }
-      throw new Error("Ingen artifact hittades för körningen.");
-    }
-
-    async function findLatestSuccessfulRun(token) {
-      const data = await ghFetch(
-        `${apiBase}/actions/workflows/${workflowFile}/runs?branch=${encodeURIComponent(ref)}&status=completed&per_page=20`,
-        token
-      );
-      const okRun = (data.workflow_runs || []).find((run) => run.conclusion === "success");
-      if (!okRun) throw new Error("Ingen lyckad körning hittades.");
-      return okRun;
-    }
-
-    async function downloadArtifact(token, artifact) {
-      appendLog(`Laddar ner artifact: ${artifact.name}`);
-      const response = await fetch(artifact.archive_download_url, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Accept": "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28"
-        }
-      });
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`Nedladdning misslyckades (${response.status}): ${text}`);
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${artifact.name}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      appendLog("Nedladdning startad.");
-    }
-
-    startBtn.addEventListener("click", async () => {
-      disableMainButtons(true);
-      setDownloadEnabled(false);
-      setRunLink(null);
-      currentArtifact = null;
-      logEl.textContent = "";
+    async function loadStatus() {
+      const statusEl = document.getElementById("status");
+      const fileUrl = "./latest/flexprint_export_full.xls";
+      const tsUrl = "./latest/last_updated_utc.txt";
 
       try {
-        const token = requireToken();
-        const view = viewEl.value;
-        const maxOrders = Number(maxOrdersEl.value || "0");
-        const marker = Date.now() - 15000;
+        const [headRes, tsRes] = await Promise.all([
+          fetch(fileUrl, { method: "HEAD", cache: "no-store" }),
+          fetch(tsUrl, { cache: "no-store" })
+        ]);
 
-        await dispatchWorkflow(token, view, maxOrders);
-
-        let run = null;
-        for (let i = 0; i < 30 && !run; i++) {
-          run = await findRunAfter(token, marker);
-          if (!run) {
-            appendLog("Väntar på att ny run ska dyka upp...");
-            await sleep(4000);
-          }
-        }
-        if (!run) throw new Error("Kunde inte hitta nyskapad workflow-run.");
-
-        appendLog(`Run hittad: #${run.run_number}`);
-        setRunLink(run.html_url);
-        run = await waitForRun(token, run.id);
-
-        if (run.conclusion !== "success") {
-          throw new Error(`Run misslyckades med conclusion=${run.conclusion || "unknown"}`);
+        const lines = [];
+        if (headRes.ok) {
+          const length = headRes.headers.get("content-length");
+          const modified = headRes.headers.get("last-modified");
+          lines.push(`XLS tillgänglig: JA`);
+          if (modified) lines.push(`Server last-modified: ${modified}`);
+          if (length) lines.push(`Storlek (bytes): ${length}`);
+        } else {
+          lines.push(`XLS tillgänglig: NEJ (${headRes.status})`);
         }
 
-        currentArtifact = await waitForArtifact(token, run.id);
-        setDownloadEnabled(true);
-        appendLog("Artifact klar. Klicka 'Ladda ner artifact'.", "OK");
-      } catch (error) {
-        appendLog(error.message, "ERR");
-      } finally {
-        disableMainButtons(false);
-      }
-    });
+        if (tsRes.ok) {
+          const txt = (await tsRes.text()).trim();
+          lines.push(`Senast publicerad (UTC): ${txt}`);
+        } else {
+          lines.push(`Senast publicerad (UTC): okänd`);
+        }
 
-    latestBtn.addEventListener("click", async () => {
-      disableMainButtons(true);
-      setDownloadEnabled(false);
-      setRunLink(null);
-      currentArtifact = null;
-      logEl.textContent = "";
-
-      try {
-        const token = requireToken();
-        const run = await findLatestSuccessfulRun(token);
-        appendLog(`Senaste lyckade run: #${run.run_number}`);
-        setRunLink(run.html_url);
-        currentArtifact = await waitForArtifact(token, run.id);
-        setDownloadEnabled(true);
-        appendLog("Artifact klar. Klicka 'Ladda ner artifact'.", "OK");
-      } catch (error) {
-        appendLog(error.message, "ERR");
-      } finally {
-        disableMainButtons(false);
+        statusEl.textContent = lines.join("\n");
+      } catch (err) {
+        statusEl.textContent = `Kunde inte läsa status: ${err.message}`;
       }
-    });
+    }
 
-    downloadBtn.addEventListener("click", async () => {
-      if (!currentArtifact) return;
-      try {
-        const token = requireToken();
-        await downloadArtifact(token, currentArtifact);
-      } catch (error) {
-        appendLog(error.message, "ERR");
-      }
-    });
+    loadStatus();
   </script>
 </body>
 </html>

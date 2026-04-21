@@ -1,7 +1,8 @@
 # FlexPrint Export via GitHub Actions (utan din fysiska dator)
 
-Den här lösningen kör exporten i GitHub Actions och laddar upp resultatet som artifacts.
-Kollegor med access till repot kan ladda ner filerna från Actions-runs.
+Den här lösningen kör exporten i GitHub Actions och:
+- laddar upp resultatet som artifacts
+- publicerar senaste `.xls` till `docs/latest/` (för GitHub Pages)
 
 ## 1) Lägg detta i ett gemensamt repo (organisation/team)
 
@@ -36,6 +37,7 @@ När run är klar:
 
 Filer:
 - `flexprint_export_full.xlsx`
+- `flexprint_export_full.xls`
 - `flexprint_orders_full_retry.csv`
 - `flexprint_order_items_full_retry.csv`
 
@@ -52,4 +54,4 @@ Workflowen kör vardagar enligt cron:
 - Körningen är inte bunden till att du personligen är inloggad lokalt.
 - Om FlexPrint begränsar inloggning via IP/brandvägg kan GitHub-hosted runners blockeras.
   I så fall behövs self-hosted runner i ert nät.
-
+- Om repot är publikt blir även den publicerade `docs/latest/flexprint_export_full.xls` publik.

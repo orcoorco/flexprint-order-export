@@ -4,6 +4,7 @@ Exporterar orderhistorik från FlexPrint till:
 - CSV på ordernivå
 - CSV på item-/detaljnivå
 - XLSX med två flikar (`Orders`, `Items`)
+- XLS med två flikar (`Orders`, `Items`)
 
 ## Lokalt
 
@@ -11,7 +12,8 @@ Exporterar orderhistorik från FlexPrint till:
 python flexprint_order_export.py \
   --output flexprint_orders_full_retry.csv \
   --items-output flexprint_order_items_full_retry.csv \
-  --xlsx-output flexprint_export_full.xlsx
+  --xlsx-output flexprint_export_full.xlsx \
+  --xls-output flexprint_export_full.xls
 ```
 
 Miljövariabler:
@@ -36,6 +38,12 @@ Aktivera GitHub Pages:
 2. Source: `Deploy from a branch`
 3. Branch: `main` och folder: `/docs`
 
-Sidan kan sedan användas för att:
-- trigga ny export via workflow_dispatch
-- hämta senaste lyckade artifact
+Sidan används för att:
+- ladda ner senaste publicerade `docs/latest/flexprint_export_full.xls`
+- öppna workflow-sidan för att starta ny export i GitHub Actions
+
+Workflowen publicerar senaste `.xls` till:
+- `docs/latest/flexprint_export_full.xls`
+- `docs/latest/last_updated_utc.txt`
+
+Viktigt: eftersom repot är publikt blir den publicerade `.xls`-filen också publik via Pages.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Export FlexPrint order history and order-detail data to CSV (Excel-compatible).
+Export FlexPrint order history and order-detail data to CSV/XLSX/XLS.
 
 Usage examples:
   FLEXPRINT_USER=Verbum FLEXPRINT_PASS=VerbuM23 python3 flexprint_order_export.py
@@ -351,6 +351,66 @@ def write_xlsx(
     return True, ""
 
 
+def write_xls(
+    path: Path,
+    orders_rows: list[dict[str, str]],
+    items_rows: list[dict[str, str]],
+    order_columns: list[str],
+    item_columns: list[str],
+) -> tuple[bool, str]:
+    try:
+        import xlwt
+    except ModuleNotFoundError:
+        return (
+            False,
+            "xlwt saknas i aktuell Python-runtime. Installera xlwt för att skapa .xls.",
+        )
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook = xlwt.Workbook(encoding="utf-8")
+    header_style = xlwt.easyxf(
+        "font: bold on, colour white;"
+        "pattern: pattern solid, fore_colour dark_teal;"
+        "align: vert centre, horiz center;"
+    )
+    body_style = xlwt.easyxf("align: vert top;")
+
+    def normalize_cell_value(value):
+        if value is None:
+            return ""
+        text = str(value)
+        # BIFF8 (.xls) max text length per cell is 32767.
+        if len(text) > 32767:
+            return text[:32760] + " [...]"
+        return text
+
+    def write_sheet(name: str, columns: list[str], rows: list[dict[str, str]]) -> None:
+        sheet = workbook.add_sheet(name, cell_overwrite_ok=True)
+        col_widths: list[int] = [len(column) for column in columns]
+
+        for col_idx, column in enumerate(columns):
+            sheet.write(0, col_idx, column, header_style)
+
+        for row_idx, row in enumerate(rows, start=1):
+            for col_idx, column in enumerate(columns):
+                value = normalize_cell_value(row.get(column, ""))
+                sheet.write(row_idx, col_idx, value, body_style)
+                if len(value) > col_widths[col_idx]:
+                    col_widths[col_idx] = len(value)
+
+        for col_idx, width in enumerate(col_widths):
+            # xlwt width unit is roughly 1/256 of character width.
+            sheet.col(col_idx).width = min((width + 2) * 256, 255 * 256)
+
+        sheet.set_panes_frozen(True)
+        sheet.set_horz_split_pos(1)
+
+    write_sheet("Orders", order_columns, orders_rows)
+    write_sheet("Items", item_columns, items_rows)
+    workbook.save(str(path))
+    return True, ""
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Export FlexPrint order history to CSV.")
     parser.add_argument(
@@ -380,6 +440,11 @@ def parse_args() -> argparse.Namespace:
         "--xlsx-output",
         default=f"flexprint_export_{os.getenv('USER', 'export')}.xlsx",
         help="Output XLSX workbook with two sheets: Orders and Items.",
+    )
+    parser.add_argument(
+        "--xls-output",
+        default=f"flexprint_export_{os.getenv('USER', 'export')}.xls",
+        help="Output XLS workbook with two sheets: Orders and Items.",
     )
     parser.add_argument(
         "--max-orders",
@@ -488,6 +553,16 @@ def main() -> int:
                 order_columns=ORDER_COLUMNS + DETAIL_COLUMNS,
                 item_columns=ITEM_COLUMNS,
             )
+        xls_written = False
+        xls_message = ""
+        if args.xls_output:
+            xls_written, xls_message = write_xls(
+                path=Path(args.xls_output),
+                orders_rows=rows,
+                items_rows=items_export_rows,
+                order_columns=ORDER_COLUMNS + DETAIL_COLUMNS,
+                item_columns=ITEM_COLUMNS,
+            )
 
     except Exception as exc:  # noqa: BLE001
         print(f"Error: {exc}", file=sys.stderr)
@@ -505,6 +580,10 @@ def main() -> int:
         print(f"Workbook: {Path(args.xlsx_output).resolve()}")
     elif args.xlsx_output and not workbook_written:
         print(f"Workbook skipped: {workbook_message}")
+    if args.xls_output and xls_written:
+        print(f"Workbook XLS: {Path(args.xls_output).resolve()}")
+    elif args.xls_output and not xls_written:
+        print(f"Workbook XLS skipped: {xls_message}")
     return 0
 
 

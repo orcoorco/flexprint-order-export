@@ -1,5 +1,6 @@
 # Generated export files
 flexprint_export_*.xlsx
+flexprint_export_*.xls
 flexprint_orders_*.csv
 flexprint_order_items_*.csv
-
+__pycache__/
