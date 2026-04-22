@@ -184,25 +184,6 @@ jobs:
               reader = csv.DictReader(handle)
               rows = list(reader)
 
-          headers = ["description", "quantity", "created"]
-          html_rows = []
-          for row in rows:
-              html_rows.append(
-                  "<tr>"
-                  + "".join(f"<td>{html.escape(row.get(h, ''))}</td>" for h in headers)
-                  + "</tr>"
-              )
-
-          table_html = (
-              "<table border='1' cellpadding='6' cellspacing='0' style='border-collapse:collapse;'>"
-              "<thead><tr>"
-              "<th>description</th><th>quantity</th><th>created</th>"
-              "</tr></thead>"
-              "<tbody>"
-              + "".join(html_rows)
-              + "</tbody></table>"
-          )
-
           html_body = f"""
           <html>
             <body>
@@ -212,9 +193,8 @@ jobs:
                 <li>Inkluderade poster: created från och med {html.escape(cutoff.strftime('%Y-%m-%d %H:%M:%S'))}</li>
                 <li>Bortfiltrerade poster: created före {html.escape(cutoff.strftime('%Y-%m-%d %H:%M:%S'))}</li>
                 <li>Körtid: {html.escape(now.strftime('%Y-%m-%d %H:%M:%S'))}</li>
+                <li>Antal rader i rapport: {len(rows)}</li>
               </ul>
-              <p><strong>Hela tabellen ({len(rows)} rader):</strong></p>
-              {table_html}
               <p>Workflow-körning: {html.escape(os.environ['RUN_URL'])}</p>
             </body>
           </html>
@@ -231,7 +211,7 @@ jobs:
           )
 
           msg = EmailMessage()
-          msg["Subject"] = "Körning Flexprint"
+          msg["Subject"] = "Månadsrapport - Astice"
           msg["From"] = os.environ["MAIL_FROM"]
           msg["To"] = ", ".join([x.strip() for x in os.environ["MAIL_TO"].split(",") if x.strip()])
           msg.set_content(text_body)

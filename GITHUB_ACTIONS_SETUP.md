@@ -67,9 +67,9 @@ Workflowen körs:
 
 Om `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `MAIL_TO` finns:
 - workflowen skickar mejl vid körning
-- ämnesrad: `Körning Flexprint`
+- ämnesrad: `Månadsrapport - Astice`
 - mejlet beskriver datumfiltreringen (inkluderat/bortfiltrerat)
-- mejlet innehåller hela tabellen (`description`, `quantity`, `created`)
+- mejlet innehåller inte tabellen
 - `report_latest.xls` bifogas i mejlet
 
 Google-krav:

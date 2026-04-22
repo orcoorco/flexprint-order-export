@@ -43,8 +43,8 @@ Setup-guide:
 
 Valfritt:
 - e-postnotis via Gmail SMTP (`SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `MAIL_TO`)
-  - ämnesrad: `Körning Flexprint`
-  - mejlet innehåller datumfilterinfo + hela tabellen
+  - ämnesrad: `Månadsrapport - Astice`
+  - mejlet innehåller datumfilterinfo (utan tabell)
 
 ## Webbsida
 
