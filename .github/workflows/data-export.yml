@@ -37,9 +37,12 @@ jobs:
       EXPORT_USER: ${{ secrets.EXPORT_USER }}
       EXPORT_PASS: ${{ secrets.EXPORT_PASS }}
       EXPORT_BASE_URL: ${{ secrets.EXPORT_BASE_URL }}
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      RESEND_FROM: ${{ secrets.RESEND_FROM }}
-      RESEND_TO: ${{ secrets.RESEND_TO }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
       EXPORT_VIEW: ${{ github.event.inputs.view }}
       EXPORT_MAX_ORDERS: ${{ github.event.inputs.max_orders }}
     steps:
@@ -144,42 +147,25 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Send email notification (no SMTP, Resend API)
-        if: ${{ steps.schedule_guard.outputs.run == 'true' && success() && env.RESEND_API_KEY != '' && env.RESEND_FROM != '' && env.RESEND_TO != '' }}
+      - name: Send email notification (Gmail SMTP)
+        if: ${{ steps.schedule_guard.outputs.run == 'true' && success() && env.SMTP_HOST != '' && env.SMTP_PORT != '' && env.SMTP_USER != '' && env.SMTP_PASS != '' && env.MAIL_FROM != '' && env.MAIL_TO != '' }}
         continue-on-error: true
-        env:
-          DOWNLOAD_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/latest/report_latest.xls
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          NOW_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-          export NOW_UTC
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ env.SMTP_HOST }}
+          server_port: ${{ env.SMTP_PORT }}
+          username: ${{ env.SMTP_USER }}
+          password: ${{ env.SMTP_PASS }}
+          subject: Ny månadsrapport är klar
+          to: ${{ env.MAIL_TO }}
+          from: ${{ env.MAIL_FROM }}
+          secure: true
+          body: |
+            Månadsrapporten är klar.
 
-          PAYLOAD="$(python - <<'PY'
-          import json
-          import os
-
-          recipients = [x.strip() for x in os.environ["RESEND_TO"].split(",") if x.strip()]
-          body = (
-              "Ny exportfil finns tillgänglig.\n\n"
-              f"Ladda ner: {os.environ['DOWNLOAD_URL']}\n"
-              f"Workflow-körning: {os.environ['RUN_URL']}\n"
-              f"Tid (UTC): {os.environ['NOW_UTC']}\n"
-          )
-
-          print(json.dumps({
-              "from": os.environ["RESEND_FROM"],
-              "to": recipients,
-              "subject": "Ny exportfil tillgänglig",
-              "text": body,
-          }))
-          PY
-          )"
-
-          curl -fsS https://api.resend.com/emails \
-            -X POST \
-            -H "Authorization: Bearer ${RESEND_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d "${PAYLOAD}"
+            Ladda ner: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/latest/report_latest.xls
+            Workflow-körning: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          attachments: report_latest.xls
 
       - name: Upload artifacts
         if: ${{ steps.schedule_guard.outputs.run == 'true' }}

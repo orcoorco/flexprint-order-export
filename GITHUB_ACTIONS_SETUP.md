@@ -21,10 +21,13 @@ Skapa:
 - `EXPORT_USER`
 - `EXPORT_PASS`
 
-Valfritt för e-post (utan SMTP, via Resend API):
-- `RESEND_API_KEY`
-- `RESEND_FROM`
-- `RESEND_TO`
+Valfritt för e-post (Gmail SMTP):
+- `SMTP_HOST` (`smtp.gmail.com`)
+- `SMTP_PORT` (`465`)
+- `SMTP_USER` (din Gmail-adress)
+- `SMTP_PASS` (Google App Password, inte vanliga lösenordet)
+- `MAIL_FROM` (avsändare, normalt samma som `SMTP_USER`)
+- `MAIL_TO` (mottagare; flera kan separeras med kommatecken)
 
 ## 3) Första körning
 
@@ -61,14 +64,20 @@ Workflowen körs:
 - automatiskt sista tisdagen varje månad kl. 08 (Europe/Stockholm)
   - tekniskt triggas den tisdagar på två UTC-tider och har en inbyggd guard som bara kör i exakt månadfönstret
 
-## 6) E-post utan SMTP (valfritt)
+## 6) E-post via Gmail SMTP (valfritt)
 
-Om `RESEND_API_KEY`, `RESEND_FROM` och `RESEND_TO` finns:
-- workflowen skickar mejl när `report_latest.xls` har uppdaterats
+Om `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `MAIL_TO` finns:
+- workflowen skickar mejl vid körning
 - mejlet innehåller länk till senaste filen och länk till körningen
+- `report_latest.xls` bifogas i mejlet
+
+Google-krav:
+- aktivera 2-stegsverifiering på Google-kontot
+- skapa ett App Password
+- använd App Password i `SMTP_PASS`
 
 Tips:
-- `RESEND_TO` kan vara flera adresser separerade med kommatecken
+- `MAIL_TO` kan vara flera adresser separerade med kommatecken
 - exempel: `anna@bolag.se, bo@bolag.se`
 
 ## Viktigt
