@@ -146,6 +146,7 @@ jobs:
 
       - name: Send email notification (no SMTP, Resend API)
         if: ${{ steps.schedule_guard.outputs.run == 'true' && success() && env.RESEND_API_KEY != '' && env.RESEND_FROM != '' && env.RESEND_TO != '' }}
+        continue-on-error: true
         env:
           DOWNLOAD_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/latest/report_latest.xls
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
