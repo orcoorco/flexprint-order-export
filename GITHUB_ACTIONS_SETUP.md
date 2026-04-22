@@ -46,11 +46,20 @@ Artifacts per körning:
 Publik fil (Pages):
 - `docs/latest/report_latest.xls`
 
+XLS/XLSX innehåller en flik `Report` med kolumner:
+- `description` (från item-rader)
+- `quantity` (från item-rader)
+- `created` (från order)
+
+Urval:
+- poster där `created` ligger inom senaste två månaderna
+
 ## 5) Automatik
 
 Workflowen körs:
 - manuellt (`workflow_dispatch`)
-- automatiskt var 15:e minut (`cron`)
+- automatiskt sista tisdagen varje månad kl. 08 (Europe/Stockholm)
+  - tekniskt triggas den tisdagar på två UTC-tider och har en inbyggd guard som bara kör i exakt månadfönstret
 
 ## 6) E-post utan SMTP (valfritt)
 

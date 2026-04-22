@@ -3,8 +3,15 @@
 Genererar:
 - CSV på ordernivå
 - CSV på item-/detaljnivå
-- XLSX med två flikar (`Orders`, `Items`)
-- XLS med två flikar (`Orders`, `Items`)
+- XLSX med en flik (`Report`)
+- XLS med en flik (`Report`)
+
+`Report` innehåller kolumnerna:
+- `description` (från item-detaljer)
+- `quantity` (från item-detaljer)
+- `created` (från orderraden)
+
+Datat begränsas till poster med `created` inom senaste två månaderna.
 
 ## Lokalt
 

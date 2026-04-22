@@ -20,7 +20,10 @@ on:
         default: "0"
         type: string
   schedule:
-    - cron: "*/15 * * * *"
+    # Runs Tuesdays at 06:00 and 07:00 UTC; gate below ensures only
+    # last Tuesday at 08:00 Europe/Stockholm executes.
+    - cron: "0 6 * * 2"
+    - cron: "0 7 * * 2"
 
 permissions:
   contents: write
@@ -40,20 +43,59 @@ jobs:
       EXPORT_VIEW: ${{ github.event.inputs.view }}
       EXPORT_MAX_ORDERS: ${{ github.event.inputs.max_orders }}
     steps:
+      - name: Decide schedule window (last Tuesday 08:00 Europe/Stockholm)
+        id: schedule_guard
+        env:
+          TZ: Europe/Stockholm
+        run: |
+          if [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual trigger -> run export."
+            exit 0
+          fi
+
+          YEAR="$(date +%Y)"
+          MONTH="$(date +%m)"
+          TODAY_DAY=$((10#$(date +%d)))
+          CURRENT_HOUR=$((10#$(date +%H)))
+
+          LAST_DAY=$((10#$(date -d "${YEAR}-${MONTH}-01 +1 month -1 day" +%d)))
+          LAST_DAY_WEEKDAY=$((10#$(date -d "${YEAR}-${MONTH}-${LAST_DAY} 12:00:00" +%u)))
+          # Monday=1 ... Sunday=7, Tuesday=2.
+          OFFSET=$(((LAST_DAY_WEEKDAY - 2 + 7) % 7))
+          LAST_TUESDAY=$((LAST_DAY - OFFSET))
+
+          if [ "${TODAY_DAY}" -eq "${LAST_TUESDAY}" ] && [ "${CURRENT_HOUR}" -eq 8 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Scheduled window matched (last Tuesday 08:00 Stockholm)."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping scheduled run. Today=${TODAY_DAY}, last_tuesday=${LAST_TUESDAY}, hour=${CURRENT_HOUR}"
+          fi
+
+      - name: Skip outside monthly execution window
+        if: ${{ steps.schedule_guard.outputs.run != 'true' }}
+        run: |
+          echo "No export this run. Window is last Tuesday each month at 08:00 Europe/Stockholm."
+
       - name: Checkout repository
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         uses: actions/checkout@v4
 
       - name: Setup Python
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install dependencies
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         run: |
           python -m pip install --upgrade pip
           python -m pip install openpyxl xlwt
 
       - name: Validate required secrets
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         run: |
           if [ -z "${EXPORT_USER}" ] || [ -z "${EXPORT_PASS}" ] || [ -z "${EXPORT_BASE_URL}" ]; then
             echo "Missing one or more required secrets: EXPORT_USER, EXPORT_PASS, EXPORT_BASE_URL."
@@ -61,6 +103,7 @@ jobs:
           fi
 
       - name: Run export
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         run: |
           VIEW="${EXPORT_VIEW:-all}"
           MAX_ORDERS="${EXPORT_MAX_ORDERS:-0}"
@@ -79,6 +122,7 @@ jobs:
             --xls-output report_latest.xls
 
       - name: Publish latest XLS to Pages folder
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         run: |
           mkdir -p docs/latest
           cp report_latest.xls docs/latest/report_latest.xls
@@ -86,6 +130,7 @@ jobs:
 
       - name: Commit latest XLS (if changed)
         id: publish
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -100,7 +145,7 @@ jobs:
           fi
 
       - name: Send email notification (no SMTP, Resend API)
-        if: ${{ success() && steps.publish.outputs.changed == 'true' && env.RESEND_API_KEY != '' && env.RESEND_FROM != '' && env.RESEND_TO != '' }}
+        if: ${{ steps.schedule_guard.outputs.run == 'true' && success() && env.RESEND_API_KEY != '' && env.RESEND_FROM != '' && env.RESEND_TO != '' }}
         env:
           DOWNLOAD_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/latest/report_latest.xls
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -136,6 +181,7 @@ jobs:
             -d "${PAYLOAD}"
 
       - name: Upload artifacts
+        if: ${{ steps.schedule_guard.outputs.run == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: data-export-${{ github.run_number }}

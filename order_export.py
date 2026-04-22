@@ -11,12 +11,14 @@ Usage examples:
 from __future__ import annotations
 
 import argparse
+import calendar
 import csv
 import html
 import os
 import re
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import HTTPCookieProcessor, Request, build_opener as urllib_build_opener
@@ -58,6 +60,12 @@ ITEM_COLUMNS = [
     "comments",
     "destination",
     "price",
+]
+
+REPORT_COLUMNS = [
+    "description",
+    "quantity",
+    "created",
 ]
 
 
@@ -238,6 +246,52 @@ def create_http_opener():
     return opener
 
 
+def parse_created_datetime(value: str) -> datetime | None:
+    cleaned = " ".join(value.split())
+    if not cleaned:
+        return None
+
+    formats = [
+        "%m/%d/%Y %I:%M %p",
+        "%m/%d/%Y %H:%M",
+        "%m/%d/%Y",
+        "%Y-%m-%d %H:%M:%S",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%d",
+    ]
+    for fmt in formats:
+        try:
+            return datetime.strptime(cleaned, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def subtract_months(dt: datetime, months: int) -> datetime:
+    if months <= 0:
+        return dt
+    year = dt.year
+    month = dt.month - months
+    while month <= 0:
+        month += 12
+        year -= 1
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+
+def filter_orders_last_months(rows: list[dict[str, str]], months: int) -> tuple[list[dict[str, str]], int, datetime]:
+    cutoff = subtract_months(datetime.now(), months)
+    filtered_rows: list[dict[str, str]] = []
+    removed = 0
+    for row in rows:
+        created_dt = parse_created_datetime(row.get("created", ""))
+        if created_dt is None or created_dt >= cutoff:
+            filtered_rows.append(row)
+        else:
+            removed += 1
+    return filtered_rows, removed, cutoff
+
+
 def get_page(opener, url: str, timeout: int = 60) -> tuple[str, str]:
     response = opener.open(url, timeout=timeout)
     return response.read().decode("utf-8", "ignore"), response.geturl()
@@ -300,10 +354,8 @@ def write_csv(path: Path, rows: list[dict[str, str]], columns: list[str]) -> Non
 
 def write_xlsx(
     path: Path,
-    orders_rows: list[dict[str, str]],
-    items_rows: list[dict[str, str]],
-    order_columns: list[str],
-    item_columns: list[str],
+    report_rows: list[dict[str, str]],
+    report_columns: list[str],
 ) -> tuple[bool, str]:
     try:
         from openpyxl import Workbook
@@ -317,9 +369,8 @@ def write_xlsx(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     workbook = Workbook()
-    orders_sheet = workbook.active
-    orders_sheet.title = "Orders"
-    items_sheet = workbook.create_sheet("Items")
+    report_sheet = workbook.active
+    report_sheet.title = "Report"
 
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
@@ -345,18 +396,15 @@ def write_xlsx(
                     max_len = value_len
             sheet.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 2, 80)
 
-    write_sheet(orders_sheet, order_columns, orders_rows)
-    write_sheet(items_sheet, item_columns, items_rows)
+    write_sheet(report_sheet, report_columns, report_rows)
     workbook.save(path)
     return True, ""
 
 
 def write_xls(
     path: Path,
-    orders_rows: list[dict[str, str]],
-    items_rows: list[dict[str, str]],
-    order_columns: list[str],
-    item_columns: list[str],
+    report_rows: list[dict[str, str]],
+    report_columns: list[str],
 ) -> tuple[bool, str]:
     try:
         import xlwt
@@ -405,8 +453,7 @@ def write_xls(
         sheet.set_panes_frozen(True)
         sheet.set_horz_split_pos(1)
 
-    write_sheet("Orders", order_columns, orders_rows)
-    write_sheet("Items", item_columns, items_rows)
+    write_sheet("Report", report_columns, report_rows)
     workbook.save(str(path))
     return True, ""
 
@@ -439,12 +486,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--xlsx-output",
         default="export_report.xlsx",
-        help="Output XLSX workbook with two sheets: Orders and Items.",
+        help="Output XLSX workbook with one sheet: Report.",
     )
     parser.add_argument(
         "--xls-output",
         default="export_report.xls",
-        help="Output XLS workbook with two sheets: Orders and Items.",
+        help="Output XLS workbook with one sheet: Report.",
     )
     parser.add_argument(
         "--max-orders",
@@ -496,11 +543,18 @@ def main() -> int:
         orders_html, _ = get_page(opener, orders_url)
         orders_html = set_orders_view(opener, base_url, orders_html, args.view)
         rows = parse_orders_table(orders_html, base_url)
+        rows, removed_old_orders, cutoff = filter_orders_last_months(rows, months=2)
+        print(
+            "Applied created-date filter: "
+            f">= {cutoff.strftime('%Y-%m-%d %H:%M:%S')} "
+            f"(kept {len(rows)}, removed {removed_old_orders})"
+        )
 
         if args.max_orders > 0:
             rows = rows[: args.max_orders]
 
         items_export_rows: list[dict[str, str]] = []
+        report_rows: list[dict[str, str]] = []
         if not args.no_details:
             total = len(rows)
             for index, row in enumerate(rows, start=1):
@@ -536,6 +590,13 @@ def main() -> int:
                         }
                         item_row.update(item)
                         items_export_rows.append(item_row)
+                        report_rows.append(
+                            {
+                                "description": item.get("description", ""),
+                                "quantity": item.get("quantity", ""),
+                                "created": row.get("created", ""),
+                            }
+                        )
 
                 if args.detail_sleep > 0:
                     time.sleep(args.detail_sleep)
@@ -551,20 +612,16 @@ def main() -> int:
         if args.xlsx_output:
             workbook_written, workbook_message = write_xlsx(
                 path=Path(args.xlsx_output),
-                orders_rows=rows,
-                items_rows=items_export_rows,
-                order_columns=ORDER_COLUMNS + DETAIL_COLUMNS,
-                item_columns=ITEM_COLUMNS,
+                report_rows=report_rows,
+                report_columns=REPORT_COLUMNS,
             )
         xls_written = False
         xls_message = ""
         if args.xls_output:
             xls_written, xls_message = write_xls(
                 path=Path(args.xls_output),
-                orders_rows=rows,
-                items_rows=items_export_rows,
-                order_columns=ORDER_COLUMNS + DETAIL_COLUMNS,
-                item_columns=ITEM_COLUMNS,
+                report_rows=report_rows,
+                report_columns=REPORT_COLUMNS,
             )
 
     except Exception as exc:  # noqa: BLE001
@@ -577,7 +634,8 @@ def main() -> int:
         print(
             "Done: "
             f"{len(rows)} orders -> {Path(args.output).resolve()} and "
-            f"{Path(args.items_output).resolve()}"
+            f"{Path(args.items_output).resolve()} "
+            f"({len(report_rows)} report rows)"
         )
     if args.xlsx_output and workbook_written:
         print(f"Workbook: {Path(args.xlsx_output).resolve()}")
