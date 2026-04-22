@@ -43,7 +43,7 @@ Setup-guide:
 
 Valfritt:
 - e-postnotis via Gmail SMTP (`SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `MAIL_TO`)
-  - ämnesrad: `Ärenderad: Körning Flexprint`
+  - ämnesrad: `Körning Flexprint`
   - mejlet innehåller datumfilterinfo + hela tabellen
 
 ## Webbsida

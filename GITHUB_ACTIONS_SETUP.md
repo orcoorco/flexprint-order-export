@@ -67,7 +67,7 @@ Workflowen körs:
 
 Om `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `MAIL_TO` finns:
 - workflowen skickar mejl vid körning
-- ämnesrad: `Ärenderad: Körning Flexprint`
+- ämnesrad: `Körning Flexprint`
 - mejlet beskriver datumfiltreringen (inkluderat/bortfiltrerat)
 - mejlet innehåller hela tabellen (`description`, `quantity`, `created`)
 - `report_latest.xls` bifogas i mejlet
